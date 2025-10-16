@@ -250,13 +250,14 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Export Format</label>
-            <Select value={exportType} onValueChange={(value: "csv" | "pdf") => setExportType(value)}>
+            <Select value={exportType} onValueChange={(value: "csv" | "pdf" | "json") => setExportType(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="csv">CSV (Spreadsheet)</SelectItem>
                 <SelectItem value="pdf">PDF (Report)</SelectItem>
+                <SelectItem value="json">JSON (Data)</SelectItem>
               </SelectContent>
             </Select>
           </div>
