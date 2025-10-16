@@ -459,6 +459,61 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
               )}
             </div>
 
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Receipt (Optional)
+              </Label>
+              <div className="relative">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={handleReceiptSelect}
+                  disabled={uploadingReceipts}
+                  className="hidden"
+                  id="receipt-input"
+                />
+                <label
+                  htmlFor="receipt-input"
+                  className="flex items-center justify-center w-full px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    Click to upload receipt (JPG, PNG, WebP, PDF • Max 10MB)
+                  </span>
+                </label>
+              </div>
+
+              {receipts.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Selected receipts:</div>
+                  {receipts.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between bg-muted p-2 rounded text-sm"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <File className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeReceipt(index)}
+                        disabled={uploadingReceipts}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancel
