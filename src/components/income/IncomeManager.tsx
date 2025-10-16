@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Pencil, Wallet } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { IncomeForm } from "./IncomeForm";
+import { formatError } from "@/lib/errorUtils";
 
 export type IncomeSource = Tables<"income_sources">;
 
