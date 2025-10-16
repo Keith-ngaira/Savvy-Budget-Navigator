@@ -56,7 +56,108 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
   });
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [receipts, setReceipts] = useState<File[]>([]);
+  const [uploadingReceipts, setUploadingReceipts] = useState(false);
   const { toast } = useToast();
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+  const handleReceiptSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.currentTarget.files || []);
+    const validFiles = files.filter(file => {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not supported. Use JPG, PNG, WebP, or PDF.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 10MB limit.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setReceipts(prev => [...prev, ...validFiles]);
+    event.currentTarget.value = '';
+  };
+
+  const removeReceipt = (index: number) => {
+    setReceipts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadReceipts = async (transactionId: string, userId: string): Promise<string[]> => {
+    if (receipts.length === 0) return [];
+
+    setUploadingReceipts(true);
+    const uploadedReceiptIds: string[] = [];
+
+    try {
+      for (const file of receipts) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${transactionId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        // Upload file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('transaction-receipts')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+        }
+
+        // Create receipt record
+        const { data: receiptData, error: receiptError } = await supabase
+          .from('receipts')
+          .insert({
+            user_id: userId,
+            file_name: file.name,
+            file_path: uploadData.path,
+            file_size: file.size,
+            file_type: file.type,
+          })
+          .select('id')
+          .single();
+
+        if (receiptError) {
+          throw new Error(`Failed to create receipt record: ${receiptError.message}`);
+        }
+
+        // Link receipt to transaction
+        const { error: linkError } = await supabase
+          .from('transaction_receipts')
+          .insert({
+            transaction_id: transactionId,
+            receipt_id: receiptData.id,
+          });
+
+        if (linkError) {
+          throw new Error(`Failed to link receipt to transaction: ${linkError.message}`);
+        }
+
+        uploadedReceiptIds.push(receiptData.id);
+      }
+    } catch (error) {
+      const message = formatError(error);
+      toast({
+        title: "Receipt upload failed",
+        description: message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setUploadingReceipts(false);
+    }
+
+    return uploadedReceiptIds;
+  };
 
   // Keep form in sync if transaction prop changes
   useEffect(() => {
