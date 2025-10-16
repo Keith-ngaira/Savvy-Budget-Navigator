@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Search, Filter, Pencil } from "lucide-react";
+import { Trash2, Search, Filter, Pencil, FileIcon, Image, ExternalLink } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { TransactionForm } from "./TransactionForm";
+import { formatError } from "@/lib/errorUtils";
 
 type Transaction = Tables<"transactions">;
 
@@ -18,6 +19,15 @@ interface TransactionListProps {
   isLoading: boolean;
 }
 
+interface TransactionReceipts {
+  [transactionId: string]: Array<{
+    id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+  }>;
+}
+
 export const TransactionList = ({ transactions, onRefresh, isLoading }: TransactionListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -25,6 +35,112 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
   const { toast } = useToast();
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [receiptsMap, setReceiptsMap] = useState<TransactionReceipts>({});
+  const [expandedReceiptTransaction, setExpandedReceiptTransaction] = useState<string | null>(null);
+
+  // Fetch receipts for all transactions
+  useEffect(() => {
+    const fetchReceiptsForTransactions = async () => {
+      const transactionIds = transactions.map(t => t.id);
+      if (transactionIds.length === 0) return;
+
+      try {
+        const { data: receiptsData, error } = await supabase
+          .from('transaction_receipts')
+          .select(`
+            id,
+            transaction_id,
+            receipt_id,
+            receipts (
+              id,
+              file_name,
+              file_path,
+              file_type
+            )
+          `)
+          .in('transaction_id', transactionIds);
+
+        if (error) throw error;
+
+        const receiptsMapTemp: TransactionReceipts = {};
+        receiptsData?.forEach((tr: any) => {
+          if (!receiptsMapTemp[tr.transaction_id]) {
+            receiptsMapTemp[tr.transaction_id] = [];
+          }
+          if (tr.receipts) {
+            receiptsMapTemp[tr.transaction_id].push(tr.receipts);
+          }
+        });
+
+        setReceiptsMap(receiptsMapTemp);
+      } catch (error) {
+        console.error('Error fetching receipts:', formatError(error));
+      }
+    };
+
+    fetchReceiptsForTransactions();
+  }, [transactions]);
+
+  const getReceiptUrl = (filePath: string) => {
+    return supabase.storage.from('transaction-receipts').getPublicUrl(filePath).data.publicUrl;
+  };
+
+  const isImageType = (fileType: string) => ['image/jpeg', 'image/png', 'image/webp'].includes(fileType);
+
+  const deleteReceipt = async (receiptId: string, transactionId: string) => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Delete transaction_receipts link
+      const { error: linkError } = await supabase
+        .from('transaction_receipts')
+        .delete()
+        .eq('receipt_id', receiptId);
+
+      if (linkError) throw linkError;
+
+      // Delete receipt record
+      const { error: recordError } = await supabase
+        .from('receipts')
+        .delete()
+        .eq('id', receiptId)
+        .eq('user_id', user.id);
+
+      if (recordError) throw recordError;
+
+      // Delete file from storage (best effort, don't fail if file not found)
+      const receipt = receiptsMap[transactionId]?.find(r => r.id === receiptId);
+      if (receipt) {
+        await supabase.storage
+          .from('transaction-receipts')
+          .remove([receipt.file_path])
+          .catch(() => {
+            // Ignore errors, file might not exist
+          });
+      }
+
+      toast({
+        title: "Success",
+        description: "Receipt deleted successfully",
+      });
+
+      // Refresh receipts
+      setReceiptsMap(prev => ({
+        ...prev,
+        [transactionId]: (prev[transactionId] || []).filter(r => r.id !== receiptId)
+      }));
+    } catch (error) {
+      const message = formatError(error);
+      toast({
+        title: "Error",
+        description: `Failed to delete receipt: ${message}`,
+        variant: "destructive",
+      });
+    }
+  };
 
   const deleteTransaction = async (id: string) => {
     try {
@@ -175,6 +291,73 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
                   )}
                   {transaction.notes && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{transaction.notes}</p>
+                  )}
+
+                  {/* Receipt indicator and preview */}
+                  {receiptsMap[transaction.id] && receiptsMap[transaction.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <button
+                        onClick={() => setExpandedReceiptTransaction(
+                          expandedReceiptTransaction === transaction.id ? null : transaction.id
+                        )}
+                        className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                      >
+                        <FileIcon className="h-3 w-3" />
+                        {receiptsMap[transaction.id].length} receipt{receiptsMap[transaction.id].length > 1 ? 's' : ''}
+                      </button>
+
+                      {/* Receipt previews */}
+                      {expandedReceiptTransaction === transaction.id && (
+                        <div className="flex flex-wrap gap-2 bg-muted/30 p-2 rounded">
+                          {receiptsMap[transaction.id].map((receipt) => (
+                            <div
+                              key={receipt.id}
+                              className="relative group bg-background border rounded overflow-hidden w-16 h-16"
+                            >
+                              {isImageType(receipt.file_type) ? (
+                                <img
+                                  src={getReceiptUrl(receipt.file_path)}
+                                  alt={receipt.file_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                              )}
+
+                              {/* Hover actions */}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                <a
+                                  href={getReceiptUrl(receipt.file_path)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 bg-white/20 hover:bg-white/40 rounded text-white"
+                                  title="Open receipt"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteReceipt(receipt.id, transaction.id);
+                                  }}
+                                  className="p-1 bg-destructive/20 hover:bg-destructive/40 rounded text-white"
+                                  title="Delete receipt"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+
+                              {/* File name tooltip */}
+                              <div className="absolute -bottom-8 left-0 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">
+                                {receipt.file_name}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 

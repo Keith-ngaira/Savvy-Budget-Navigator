@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Pencil, Wallet } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { IncomeForm } from "./IncomeForm";
+import { formatError } from "@/lib/errorUtils";
 
 export type IncomeSource = Tables<"income_sources">;
 
@@ -37,8 +38,9 @@ export const IncomeManager = () => {
       if (error) throw error;
       setIncomes(data || []);
     } catch (err) {
+      const message = formatError(err);
       console.error("Error fetching incomes:", err);
-      toast({ title: "Error", description: "Failed to fetch income sources", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to fetch income sources: ${message}`, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

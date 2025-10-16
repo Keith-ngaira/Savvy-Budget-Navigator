@@ -12,7 +12,9 @@ import { TransactionList } from "./TransactionList";
 import { WeeklySummary } from "./WeeklySummary";
 import { SpendingAlerts } from "./SpendingAlerts";
 import { RecurringTransactions } from "./RecurringTransactions";
+import { DailySummary } from "./DailySummary";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatError } from "@/lib/errorUtils";
 
 type Transaction = Tables<"transactions">;
 type Income = Tables<"income_sources">;
@@ -108,8 +110,9 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
         setIncomes(data || []);
       }
     } catch (error) {
+      const message = formatError(error);
       console.error("Error fetching incomes:", error);
-      toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to fetch incomes: ${message}`, variant: "destructive" });
     }
   };
 
@@ -268,8 +271,9 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
           </Card>
         </div>
 
-        {/* Weekly Summary and Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Daily Summary, Weekly Summary and Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <DailySummary transactions={transactions} />
           <WeeklySummary transactions={transactions} />
           <SpendingAlerts transactions={transactions} budgets={budgets} />
         </div>

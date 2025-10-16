@@ -19,7 +19,7 @@ interface ExportDataProps {
 
 export const ExportData = ({ transactions }: ExportDataProps) => {
   const [isExporting, setIsExporting] = useState(false);
-  const [exportType, setExportType] = useState<"csv" | "pdf">("csv");
+  const [exportType, setExportType] = useState<"csv" | "pdf" | "json">("csv");
   const [dateRange, setDateRange] = useState<"all" | "month" | "quarter" | "year">("month");
   const { toast } = useToast();
 
@@ -101,7 +101,7 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
     // Title
     doc.setFontSize(20);
     doc.text("Financial Report", 20, 20);
-    
+
     // Date range info
     doc.setFontSize(12);
     doc.text(`Report Period: ${dateRange.charAt(0).toUpperCase() + dateRange.slice(1)}`, 20, 35);
@@ -111,7 +111,7 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
     const totalIncome = filteredTransactions
       .filter(t => t.type === "income")
       .reduce((sum, t) => sum + Number(t.amount), 0);
-    
+
     const totalExpenses = filteredTransactions
       .filter(t => t.type === "expense")
       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -140,16 +140,87 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
     doc.save(`financial-report-${dateRange}-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
+  const exportToJSON = () => {
+    const filteredTransactions = filterTransactionsByDateRange();
+
+    // Calculate summary statistics
+    const totalIncome = filteredTransactions
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const totalExpenses = filteredTransactions
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    // Group transactions by category
+    const byCategory: Record<string, any> = {};
+    filteredTransactions.forEach(t => {
+      if (!byCategory[t.category]) {
+        byCategory[t.category] = {
+          total: 0,
+          count: 0,
+          transactions: []
+        };
+      }
+      byCategory[t.category].total += Number(t.amount);
+      byCategory[t.category].count += 1;
+      byCategory[t.category].transactions.push({
+        date: t.date,
+        description: t.description,
+        amount: Number(t.amount),
+        type: t.type
+      });
+    });
+
+    // Create JSON export structure
+    const exportData = {
+      exportMetadata: {
+        exportDate: new Date().toISOString(),
+        dateRange: dateRange,
+        generatedBy: "Savvy Budget Navigator"
+      },
+      summary: {
+        totalIncome: totalIncome,
+        totalExpenses: totalExpenses,
+        netBalance: totalIncome - totalExpenses,
+        transactionCount: filteredTransactions.length,
+        incomeTransactions: filteredTransactions.filter(t => t.type === "income").length,
+        expenseTransactions: filteredTransactions.filter(t => t.type === "expense").length
+      },
+      byCategory: byCategory,
+      allTransactions: filteredTransactions.map(t => ({
+        date: t.date,
+        type: t.type,
+        category: t.category,
+        description: t.description,
+        amount: Number(t.amount)
+      }))
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `financial-data-${dateRange}-${new Date().toISOString().split('T')[0]}.json`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
-    
+
     try {
       if (exportType === "csv") {
         exportToCSV();
-      } else {
+      } else if (exportType === "pdf") {
         exportToPDF();
+      } else if (exportType === "json") {
+        exportToJSON();
       }
-      
+
       toast({
         title: "Export successful",
         description: `Your data has been exported as ${exportType.toUpperCase()}`,
@@ -179,13 +250,14 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Export Format</label>
-            <Select value={exportType} onValueChange={(value: "csv" | "pdf") => setExportType(value)}>
+            <Select value={exportType} onValueChange={(value: "csv" | "pdf" | "json") => setExportType(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="csv">CSV (Spreadsheet)</SelectItem>
                 <SelectItem value="pdf">PDF (Report)</SelectItem>
+                <SelectItem value="json">JSON (Data)</SelectItem>
               </SelectContent>
             </Select>
           </div>

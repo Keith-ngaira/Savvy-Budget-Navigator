@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { X, Loader2, Plus, Tag, Repeat2 } from "lucide-react";
+import { X, Loader2, Plus, Tag, Repeat2, Upload, File } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatError } from "@/lib/errorUtils";
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -55,7 +56,108 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
   });
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [receipts, setReceipts] = useState<File[]>([]);
+  const [uploadingReceipts, setUploadingReceipts] = useState(false);
   const { toast } = useToast();
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+  const handleReceiptSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.currentTarget.files || []);
+    const validFiles = files.filter(file => {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: `${file.name} is not supported. Use JPG, PNG, WebP, or PDF.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 10MB limit.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setReceipts(prev => [...prev, ...validFiles]);
+    event.currentTarget.value = '';
+  };
+
+  const removeReceipt = (index: number) => {
+    setReceipts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadReceipts = async (transactionId: string, userId: string): Promise<string[]> => {
+    if (receipts.length === 0) return [];
+
+    setUploadingReceipts(true);
+    const uploadedReceiptIds: string[] = [];
+
+    try {
+      for (const file of receipts) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}/${transactionId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        // Upload file to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('transaction-receipts')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+        }
+
+        // Create receipt record
+        const { data: receiptData, error: receiptError } = await supabase
+          .from('receipts')
+          .insert({
+            user_id: userId,
+            file_name: file.name,
+            file_path: uploadData.path,
+            file_size: file.size,
+            file_type: file.type,
+          })
+          .select('id')
+          .single();
+
+        if (receiptError) {
+          throw new Error(`Failed to create receipt record: ${receiptError.message}`);
+        }
+
+        // Link receipt to transaction
+        const { error: linkError } = await supabase
+          .from('transaction_receipts')
+          .insert({
+            transaction_id: transactionId,
+            receipt_id: receiptData.id,
+          });
+
+        if (linkError) {
+          throw new Error(`Failed to link receipt to transaction: ${linkError.message}`);
+        }
+
+        uploadedReceiptIds.push(receiptData.id);
+      }
+    } catch (error) {
+      const message = formatError(error);
+      toast({
+        title: "Receipt upload failed",
+        description: message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setUploadingReceipts(false);
+    }
+
+    return uploadedReceiptIds;
+  };
 
   // Keep form in sync if transaction prop changes
   useEffect(() => {
@@ -92,7 +194,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast({
           title: "Error",
@@ -101,6 +203,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
         });
         return;
       }
+
       if (mode === "edit" && transaction?.id) {
         const { error } = await supabase
           .from("transactions")
@@ -123,6 +226,12 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             variant: "destructive",
           });
         } else {
+          // Upload receipts if any
+          if (receipts.length > 0) {
+            await uploadReceipts(transaction.id, user.id);
+            setReceipts([]);
+          }
+
           toast({
             title: "Success",
             description: "Transaction updated successfully",
@@ -131,7 +240,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
           onClose();
         }
       } else {
-        const { error } = await supabase
+        const { data: transactionData, error } = await supabase
           .from("transactions")
           .insert({
             user_id: user.id,
@@ -142,7 +251,9 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             date: formData.date,
             tags: tags.length > 0 ? tags.join(",") : null,
             notes: formData.notes || null,
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) {
           toast({
@@ -151,6 +262,12 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             variant: "destructive",
           });
         } else {
+          // Upload receipts if any
+          if (receipts.length > 0 && transactionData) {
+            await uploadReceipts(transactionData.id, user.id);
+            setReceipts([]);
+          }
+
           toast({
             title: "Success",
             description: "Transaction added successfully",
@@ -160,9 +277,10 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
         }
       }
     } catch (error) {
+      const message = formatError(error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -337,6 +455,61 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
                       <SelectItem value="yearly">Yearly</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Receipt (Optional)
+              </Label>
+              <div className="relative">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={handleReceiptSelect}
+                  disabled={uploadingReceipts}
+                  className="hidden"
+                  id="receipt-input"
+                />
+                <label
+                  htmlFor="receipt-input"
+                  className="flex items-center justify-center w-full px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    Click to upload receipt (JPG, PNG, WebP, PDF • Max 10MB)
+                  </span>
+                </label>
+              </div>
+
+              {receipts.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Selected receipts:</div>
+                  {receipts.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between bg-muted p-2 rounded text-sm"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <File className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{file.name}</span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeReceipt(index)}
+                        disabled={uploadingReceipts}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
