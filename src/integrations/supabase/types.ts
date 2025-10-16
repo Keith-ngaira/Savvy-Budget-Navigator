@@ -271,6 +271,60 @@ export type Database = {
         }
         Relationships: []
       }
+      receipts: {
+        Row: {
+          id: string
+          user_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transaction_receipts: {
+        Row: {
+          id: string
+          transaction_id: string
+          receipt_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          transaction_id: string
+          receipt_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          transaction_id?: string
+          receipt_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
