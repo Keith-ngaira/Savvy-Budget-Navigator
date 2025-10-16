@@ -109,9 +109,6 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
         setIncomes(data || []);
       }
     } catch (error) {
-      // Better error formatting
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { formatError } = require("@/lib/errorUtils");
       const message = formatError(error);
       console.error("Error fetching incomes:", error);
       toast({ title: "Error", description: `Failed to fetch incomes: ${message}`, variant: "destructive" });
