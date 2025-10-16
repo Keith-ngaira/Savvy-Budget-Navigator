@@ -19,7 +19,7 @@ interface ExportDataProps {
 
 export const ExportData = ({ transactions }: ExportDataProps) => {
   const [isExporting, setIsExporting] = useState(false);
-  const [exportType, setExportType] = useState<"csv" | "pdf">("csv");
+  const [exportType, setExportType] = useState<"csv" | "pdf" | "json">("csv");
   const [dateRange, setDateRange] = useState<"all" | "month" | "quarter" | "year">("month");
   const { toast } = useToast();
 
