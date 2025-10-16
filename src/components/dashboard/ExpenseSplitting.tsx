@@ -93,7 +93,7 @@ export const ExpenseSplitting = ({ onSplitCreated }: { onSplitCreated?: () => vo
       setSplits([...splits, splitRecord]);
 
       // Save to database
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("split_expenses")
         .insert({
           user_id: user.id,

@@ -15,6 +15,7 @@ import { RecurringTransactions } from "./RecurringTransactions";
 import { DailySummary } from "./DailySummary";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatError } from "@/lib/errorUtils";
+import { MonthOverMonth } from "@/components/analytics/MonthOverMonth";
 
 type Transaction = Tables<"transactions">;
 type Income = Tables<"income_sources">;
@@ -278,6 +279,11 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
           <SpendingAlerts transactions={transactions} budgets={budgets} />
         </div>
 
+        {/* Month over Month Comparison */}
+        <div className="mb-8">
+          <MonthOverMonth transactions={transactions} incomes={incomes} />
+        </div>
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <Card className="shadow-card">
@@ -332,7 +338,7 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
                         outerRadius={80}
                         paddingAngle={2}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        label={({ name, percent }) => `${name} (${(Number(percent) * 100).toFixed(0)}%)`}
                       >
                         {expenseData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

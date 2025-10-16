@@ -49,7 +49,7 @@ export const CSVImport = ({ onImportComplete }: { onImportComplete?: () => void 
         description: parts[descIdx] || 'Import',
         category: parts[catIdx] || 'Other',
         amount: parts[amtIdx] || '0',
-        type: (parts[typeIdx]?.toLowerCase() === 'income' ? 'income' : 'expense') as const,
+        type: (parts[typeIdx]?.toLowerCase() === 'income' ? 'income' : 'expense') as 'income' | 'expense',
       });
     }
 

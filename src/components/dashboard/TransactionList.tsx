@@ -11,7 +11,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { TransactionForm } from "./TransactionForm";
 import { formatError } from "@/lib/errorUtils";
 
-type Transaction = Tables<"transactions">;
+type Transaction = Tables<"transactions"> & { tags?: string | null; notes?: string | null };
 
 interface TransactionListProps {
   transactions: Transaction[];

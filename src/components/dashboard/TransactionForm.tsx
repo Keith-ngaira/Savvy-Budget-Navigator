@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { X, Loader2, Plus, Tag, Repeat2, Upload, File } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatError } from "@/lib/errorUtils";
+import { getSuggestedCategory } from "@/lib/categorization";
+import { enqueueAction, isOnline } from "@/lib/offlineQueue";
 
 interface TransactionFormProps {
   onClose: () => void;
@@ -179,7 +181,15 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
 
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
+      const newTags = [...tags, tagInput.trim()];
+      setTags(newTags);
+      // Auto-suggest category if not selected
+      if (!formData.category) {
+        const suggestion = getSuggestedCategory(formData.type, formData.description, newTags);
+        if (suggestion) {
+          setFormData((prev) => ({ ...prev, category: suggestion }));
+        }
+      }
       setTagInput("");
     }
   };
@@ -204,13 +214,41 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
         return;
       }
 
+      // Ensure category fallback using suggestion if user didn't set it
+      const resolvedCategory = formData.category || getSuggestedCategory(formData.type, formData.description, tags) || "";
+
+      // Offline handling for create mode
+      if (!isOnline()) {
+        if (mode === "edit") {
+          toast({
+            title: "Offline",
+            description: "Editing transactions is unavailable offline.",
+            variant: "destructive",
+          });
+          return;
+        }
+        enqueueAction('add-transaction', {
+          type: formData.type,
+          amount: parseFloat(formData.amount),
+          category: resolvedCategory,
+          description: formData.description,
+          date: formData.date,
+          tags,
+          notes: formData.notes,
+        });
+        toast({ title: "Saved offline", description: "Will sync when you're back online." });
+        onTransactionAdded && onTransactionAdded();
+        onClose();
+        return;
+      }
+
       if (mode === "edit" && transaction?.id) {
         const { error } = await supabase
           .from("transactions")
           .update({
             type: formData.type,
             amount: parseFloat(formData.amount),
-            category: formData.category,
+            category: resolvedCategory,
             description: formData.description,
             date: formData.date,
             tags: tags.length > 0 ? tags.join(",") : null,
@@ -246,7 +284,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             user_id: user.id,
             type: formData.type,
             amount: parseFloat(formData.amount),
-            category: formData.category,
+            category: resolvedCategory,
             description: formData.description,
             date: formData.date,
             tags: tags.length > 0 ? tags.join(",") : null,
@@ -306,9 +344,11 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
                 <Label>Type</Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value: "income" | "expense") => 
-                    setFormData({ ...formData, type: value, category: "" })
-                  }
+                  onValueChange={(value: "income" | "expense") => {
+                    // Reset category and re-suggest based on description/tags
+                    const suggestion = getSuggestedCategory(value, formData.description, tags);
+                    setFormData((prev) => ({ ...prev, type: value, category: suggestion || "" }));
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -359,7 +399,19 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
                 id="description"
                 placeholder="Enter description..."
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData((prev) => {
+                    // Suggest category only if not selected
+                    if (!prev.category) {
+                      const suggestion = getSuggestedCategory(prev.type as "income" | "expense", value, tags);
+                      if (suggestion) {
+                        return { ...prev, description: value, category: suggestion };
+                      }
+                    }
+                    return { ...prev, description: value };
+                  });
+                }}
                 required
               />
             </div>

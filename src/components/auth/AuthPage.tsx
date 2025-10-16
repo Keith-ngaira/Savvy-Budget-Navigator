@@ -97,7 +97,8 @@ export const AuthPage = () => {
             access_type: 'offline',
             prompt: 'consent',
           },
-          redirectTo: 'https://mzthqfphmirlevnadbeu.supabase.co/auth/v1/callback',
+          scopes: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar',
+          redirectTo: `${window.location.origin}/`,
         },
       });
 

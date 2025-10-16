@@ -4,8 +4,14 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { BudgetManager } from "@/components/budget/BudgetManager";
 import { FinancialCharts } from "@/components/analytics/FinancialCharts";
+import { NetWorthManager } from "@/components/networth/NetWorthManager";
+import { DebtManager } from "@/components/debts/DebtManager";
+import { InvestmentManager } from "@/components/investments/InvestmentManager";
+import { EndOfMonthReport } from "@/components/analytics/EndOfMonthReport";
+import { EncryptedBackups } from "@/components/analytics/EncryptedBackups";
 import { ExportData } from "@/components/analytics/ExportData";
 import { GoalsManager } from "@/components/goals/GoalsManager";
+import { GoalForecasts } from "@/components/goals/GoalForecasts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, Target, Download, Home, Wallet } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
@@ -24,6 +30,18 @@ const Index = () => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        // Persist Google provider token for integrations (Sheets/Calendar)
+        const providerToken = (session as any)?.provider_token as string | undefined;
+        if (providerToken) {
+          localStorage.setItem('google_access_token', providerToken);
+          localStorage.setItem('google_sheets_token', providerToken);
+          localStorage.setItem('google_calendar_token', providerToken);
+        }
+        if (!session) {
+          localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_sheets_token');
+          localStorage.removeItem('google_calendar_token');
+        }
         setLoading(false);
       }
     );
@@ -32,6 +50,12 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      const providerToken = (session as any)?.provider_token as string | undefined;
+      if (providerToken) {
+        localStorage.setItem('google_access_token', providerToken);
+        localStorage.setItem('google_sheets_token', providerToken);
+        localStorage.setItem('google_calendar_token', providerToken);
+      }
       setLoading(false);
     });
 
@@ -67,13 +91,31 @@ const Index = () => {
             <BudgetManager transactions={transactions} />
           </TabsContent>
           <TabsContent value="analytics">
-            <FinancialCharts transactions={transactions} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FinancialCharts transactions={transactions} />
+              <NetWorthManager />
+            </div>
+            <div className="mt-6">
+              <DebtManager />
+            </div>
+            <div className="mt-6">
+              <InvestmentManager />
+            </div>
+            <div className="mt-6">
+              <EndOfMonthReport />
+            </div>
+            <div className="mt-6">
+              <EncryptedBackups />
+            </div>
           </TabsContent>
           <TabsContent value="income">
             <IncomeManager />
           </TabsContent>
           <TabsContent value="goals">
-            <GoalsManager />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GoalForecasts />
+              <GoalsManager />
+            </div>
           </TabsContent>
           <TabsContent value="export">
             <ExportData transactions={transactions} />

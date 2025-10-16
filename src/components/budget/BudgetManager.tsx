@@ -35,10 +35,19 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [rolloverChecked, setRolloverChecked] = useState(false);
 
   useEffect(() => {
     fetchBudgets();
   }, []);
+
+  // Run rollover check once after budgets load
+  useEffect(() => {
+    if (!isLoading && budgets.length >= 0 && !rolloverChecked) {
+      ensureMonthlyRollover().finally(() => setRolloverChecked(true));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, budgets.length]);
 
   const fetchBudgets = async () => {
     setIsLoading(true);
@@ -93,6 +102,79 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
 
     const percentage = (spent / Number(budget.amount)) * 100;
     return { spent, percentage: Math.min(percentage, 100) };
+  };
+
+  const getMonthRange = (date: Date) => {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return { start, end };
+  };
+
+  const getPrevMonthRange = (date: Date) => {
+    const prev = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    return getMonthRange(prev);
+  };
+
+  const ensureMonthlyRollover = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const now = new Date();
+      const { start: currStart, end: currEnd } = getMonthRange(now);
+      const { start: prevStart, end: prevEnd } = getPrevMonthRange(now);
+
+      // Build maps for quick lookups
+      const monthlyBudgets = budgets.filter(b => (b.period || 'monthly') === 'monthly');
+
+      const hasCurrentForCategory = (category: string) =>
+        monthlyBudgets.some(b => b.category === category && b.start_date === currStart.toISOString().split('T')[0]);
+
+      const prevMonthBudgets = monthlyBudgets.filter(b => b.start_date === prevStart.toISOString().split('T')[0]);
+
+      const inserts: Array<Promise<any>> = [];
+      prevMonthBudgets.forEach(prevBudget => {
+        if (hasCurrentForCategory(prevBudget.category)) return;
+
+        // Compute previous month spent for this category
+        const spentPrev = transactions
+          .filter(t => {
+            const d = new Date(t.date);
+            return (
+              t.type === 'expense' &&
+              t.category === prevBudget.category &&
+              d >= prevStart && d <= prevEnd
+            );
+          })
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+
+        const remaining = Math.max(0, Number(prevBudget.amount) - spentPrev);
+        const newAmount = Number(prevBudget.amount) + remaining; // carry forward remaining
+
+        inserts.push(
+          supabase.from('budgets').insert({
+            user_id: user.id,
+            category: prevBudget.category,
+            amount: newAmount,
+            period: 'monthly',
+            start_date: currStart.toISOString().split('T')[0],
+            end_date: currEnd.toISOString().split('T')[0],
+          })
+        );
+      });
+
+      if (inserts.length > 0) {
+        await Promise.all(inserts);
+        await fetchBudgets();
+        toast({
+          title: 'Budget rollover applied',
+          description: 'Remaining amounts from last month were carried forward.',
+        });
+      }
+    } catch (e) {
+      // Best-effort; do not block UI
+      console.error('Rollover error', e);
+    }
   };
 
   const getBudgetStatus = (percentage: number) => {

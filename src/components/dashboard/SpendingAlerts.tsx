@@ -99,34 +99,71 @@ export const SpendingAlerts = ({ transactions, budgets }: SpendingAlertsProps) =
       }
     });
 
-    // Detect unusual spending
-    const dailyAverages = new Map<string, { sum: number; count: number }>();
-    transactions
-      .filter(t => t.type === "expense")
-      .forEach(t => {
-        const category = t.category;
-        const current = dailyAverages.get(category) || { sum: 0, count: 0 };
-        current.sum += Number(t.amount);
-        current.count += 1;
-        dailyAverages.set(category, current);
-      });
+    // Detect unusual spending (7-day vs 30-day baseline per category)
+    const now = new Date();
+    const last7From = new Date(now);
+    last7From.setDate(now.getDate() - 7);
+    const last30From = new Date(now);
+    last30From.setDate(now.getDate() - 30);
 
-    const today = new Date().toISOString().split('T')[0];
-    const todayTransactions = transactions.filter(t => t.date === today && t.type === "expense");
+    const expenses = transactions.filter(t => t.type === "expense");
 
-    todayTransactions.forEach(txn => {
-      const average = dailyAverages.get(txn.category)?.sum / (dailyAverages.get(txn.category)?.count || 1) || 0;
-      if (Number(txn.amount) > average * 2 && average > 0) {
-        const percentAboveAverage = ((Number(txn.amount) / average) - 1) * 100;
+    // Build daily sums per category for last 30 days
+    const byCatDay = new Map<string, Map<string, number>>();
+    expenses.forEach(t => {
+      const d = new Date(t.date);
+      if (d >= last30From && d <= now) {
+        const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split('T')[0];
+        const cat = t.category;
+        if (!byCatDay.has(cat)) byCatDay.set(cat, new Map());
+        const dayMap = byCatDay.get(cat)!;
+        dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + Number(t.amount));
+      }
+    });
+
+    // Compute baseline mean and std per category across observed days (last 30)
+    const baselineStats = new Map<string, { mean: number; std: number }>();
+    byCatDay.forEach((dayMap, cat) => {
+      const vals = Array.from(dayMap.values());
+      const n = vals.length;
+      if (n === 0) return;
+      const mean = vals.reduce((a, b) => a + b, 0) / n;
+      const variance = vals.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+      const std = Math.sqrt(variance);
+      baselineStats.set(cat, { mean, std });
+    });
+
+    // Compute last 7-day total per category
+    const last7Totals = new Map<string, number>();
+    expenses.forEach(t => {
+      const d = new Date(t.date);
+      if (d >= last7From && d <= now) {
+        last7Totals.set(t.category, (last7Totals.get(t.category) || 0) + Number(t.amount));
+      }
+    });
+
+    // Flag categories where 7-day average significantly exceeds 30-day baseline
+    last7Totals.forEach((sum7, cat) => {
+      const stats = baselineStats.get(cat);
+      if (!stats) return;
+      const avg7 = sum7 / 7; // average per day recent
+      const mean = stats.mean;
+      const std = stats.std;
+
+      // Conditions: either z-score > 2 when std > 0, or avg7 > 1.5x mean with a minimum amount threshold
+      const z = std > 0 ? (avg7 - mean) / std : Infinity;
+      const pctAbove = mean > 0 ? ((avg7 / mean) - 1) * 100 : 0;
+      const significantAmount = sum7 >= 1000; // avoid noise on tiny amounts
+      if ((std > 0 && z >= 2 && significantAmount) || (avg7 > mean * 1.5 && significantAmount)) {
         generatedAlerts.push({
-          id: `unusual-${txn.id}`,
+          id: `unusual-${cat}-${now.toISOString().slice(0,10)}`,
           type: "unusual-spending",
           severity: "warning",
-          title: `Unusual ${txn.category} Spending`,
-          message: `This KSh ${Number(txn.amount).toLocaleString()} transaction is ${percentAboveAverage.toFixed(0)}% above your average for ${txn.category}`,
+          title: `Unusual ${cat} Spending (7d)`,
+          message: `Last 7 days: KSh ${sum7.toLocaleString()} • Avg/day ${(avg7).toFixed(0)} — ${(pctAbove).toFixed(0)}% above your 30-day daily average` + (std > 0 ? ` (z≈${z.toFixed(1)})` : ``),
           data: {
-            category: txn.category,
-            amount: Number(txn.amount),
+            category: cat,
+            amount: sum7,
           },
         });
       }

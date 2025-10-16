@@ -64,7 +64,7 @@ export const GoogleCalendarReminders = ({
       const reminderDays = parseInt(reminderDaysBefore);
 
       // Sync recurring transactions
-      let transactionResult = { success: true, message: "", eventIds: [] };
+      let transactionResult: { success: boolean; message: string; eventIds?: string[] } = { success: true, message: "" };
       if (activeTransactions.length > 0) {
         transactionResult = await googleCalendarService.syncRecurringTransactions(
           { accessToken },
@@ -74,7 +74,7 @@ export const GoogleCalendarReminders = ({
       }
 
       // Sync goals
-      let goalsResult = { success: true, message: "", eventIds: [] };
+      let goalsResult: { success: boolean; message: string; eventIds?: string[] } = { success: true, message: "" };
       if (futureGoals.length > 0) {
         goalsResult = await googleCalendarService.syncGoals(
           { accessToken },
