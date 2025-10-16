@@ -37,8 +37,13 @@ export const IncomeManager = () => {
       if (error) throw error;
       setIncomes(data || []);
     } catch (err) {
+      // Better error formatting for debugging and user feedback
+      // Lazy import to avoid circular deps
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { formatError } = require("@/lib/errorUtils");
+      const message = formatError(err);
       console.error("Error fetching incomes:", err);
-      toast({ title: "Error", description: "Failed to fetch income sources", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to fetch income sources: ${message}`, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
