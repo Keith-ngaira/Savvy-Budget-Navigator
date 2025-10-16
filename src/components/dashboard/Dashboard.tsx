@@ -13,6 +13,7 @@ import { WeeklySummary } from "./WeeklySummary";
 import { SpendingAlerts } from "./SpendingAlerts";
 import { RecurringTransactions } from "./RecurringTransactions";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatError } from "@/lib/errorUtils";
 
 type Transaction = Tables<"transactions">;
 type Income = Tables<"income_sources">;
