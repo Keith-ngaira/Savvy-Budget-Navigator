@@ -211,14 +211,16 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
 
   const handleExport = async () => {
     setIsExporting(true);
-    
+
     try {
       if (exportType === "csv") {
         exportToCSV();
-      } else {
+      } else if (exportType === "pdf") {
         exportToPDF();
+      } else if (exportType === "json") {
+        exportToJSON();
       }
-      
+
       toast({
         title: "Export successful",
         description: `Your data has been exported as ${exportType.toUpperCase()}`,
