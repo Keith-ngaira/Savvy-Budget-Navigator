@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { X, Loader2, Plus, Tag, Repeat2 } from "lucide-react";
+import { X, Loader2, Plus, Tag, Repeat2, Upload, File } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatError } from "@/lib/errorUtils";
 
 interface TransactionFormProps {
   onClose: () => void;
