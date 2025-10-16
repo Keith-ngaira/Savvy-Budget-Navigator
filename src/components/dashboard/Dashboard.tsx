@@ -12,6 +12,7 @@ import { TransactionList } from "./TransactionList";
 import { WeeklySummary } from "./WeeklySummary";
 import { SpendingAlerts } from "./SpendingAlerts";
 import { RecurringTransactions } from "./RecurringTransactions";
+import { DailySummary } from "./DailySummary";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatError } from "@/lib/errorUtils";
 
