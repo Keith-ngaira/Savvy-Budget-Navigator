@@ -194,7 +194,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast({
           title: "Error",
@@ -203,6 +203,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
         });
         return;
       }
+
       if (mode === "edit" && transaction?.id) {
         const { error } = await supabase
           .from("transactions")
@@ -225,6 +226,12 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             variant: "destructive",
           });
         } else {
+          // Upload receipts if any
+          if (receipts.length > 0) {
+            await uploadReceipts(transaction.id, user.id);
+            setReceipts([]);
+          }
+
           toast({
             title: "Success",
             description: "Transaction updated successfully",
@@ -233,7 +240,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
           onClose();
         }
       } else {
-        const { error } = await supabase
+        const { data: transactionData, error } = await supabase
           .from("transactions")
           .insert({
             user_id: user.id,
@@ -244,7 +251,9 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             date: formData.date,
             tags: tags.length > 0 ? tags.join(",") : null,
             notes: formData.notes || null,
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) {
           toast({
@@ -253,6 +262,12 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
             variant: "destructive",
           });
         } else {
+          // Upload receipts if any
+          if (receipts.length > 0 && transactionData) {
+            await uploadReceipts(transactionData.id, user.id);
+            setReceipts([]);
+          }
+
           toast({
             title: "Success",
             description: "Transaction added successfully",
@@ -262,9 +277,10 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
         }
       }
     } catch (error) {
+      const message = formatError(error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: message,
         variant: "destructive",
       });
     } finally {
