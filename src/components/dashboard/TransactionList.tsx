@@ -19,6 +19,15 @@ interface TransactionListProps {
   isLoading: boolean;
 }
 
+interface TransactionReceipts {
+  [transactionId: string]: Array<{
+    id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+  }>;
+}
+
 export const TransactionList = ({ transactions, onRefresh, isLoading }: TransactionListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -26,6 +35,112 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
   const { toast } = useToast();
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [receiptsMap, setReceiptsMap] = useState<TransactionReceipts>({});
+  const [expandedReceiptTransaction, setExpandedReceiptTransaction] = useState<string | null>(null);
+
+  // Fetch receipts for all transactions
+  useEffect(() => {
+    const fetchReceiptsForTransactions = async () => {
+      const transactionIds = transactions.map(t => t.id);
+      if (transactionIds.length === 0) return;
+
+      try {
+        const { data: receiptsData, error } = await supabase
+          .from('transaction_receipts')
+          .select(`
+            id,
+            transaction_id,
+            receipt_id,
+            receipts (
+              id,
+              file_name,
+              file_path,
+              file_type
+            )
+          `)
+          .in('transaction_id', transactionIds);
+
+        if (error) throw error;
+
+        const receiptsMapTemp: TransactionReceipts = {};
+        receiptsData?.forEach((tr: any) => {
+          if (!receiptsMapTemp[tr.transaction_id]) {
+            receiptsMapTemp[tr.transaction_id] = [];
+          }
+          if (tr.receipts) {
+            receiptsMapTemp[tr.transaction_id].push(tr.receipts);
+          }
+        });
+
+        setReceiptsMap(receiptsMapTemp);
+      } catch (error) {
+        console.error('Error fetching receipts:', formatError(error));
+      }
+    };
+
+    fetchReceiptsForTransactions();
+  }, [transactions]);
+
+  const getReceiptUrl = (filePath: string) => {
+    return supabase.storage.from('transaction-receipts').getPublicUrl(filePath).data.publicUrl;
+  };
+
+  const isImageType = (fileType: string) => ['image/jpeg', 'image/png', 'image/webp'].includes(fileType);
+
+  const deleteReceipt = async (receiptId: string, transactionId: string) => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Delete transaction_receipts link
+      const { error: linkError } = await supabase
+        .from('transaction_receipts')
+        .delete()
+        .eq('receipt_id', receiptId);
+
+      if (linkError) throw linkError;
+
+      // Delete receipt record
+      const { error: recordError } = await supabase
+        .from('receipts')
+        .delete()
+        .eq('id', receiptId)
+        .eq('user_id', user.id);
+
+      if (recordError) throw recordError;
+
+      // Delete file from storage (best effort, don't fail if file not found)
+      const receipt = receiptsMap[transactionId]?.find(r => r.id === receiptId);
+      if (receipt) {
+        await supabase.storage
+          .from('transaction-receipts')
+          .remove([receipt.file_path])
+          .catch(() => {
+            // Ignore errors, file might not exist
+          });
+      }
+
+      toast({
+        title: "Success",
+        description: "Receipt deleted successfully",
+      });
+
+      // Refresh receipts
+      setReceiptsMap(prev => ({
+        ...prev,
+        [transactionId]: (prev[transactionId] || []).filter(r => r.id !== receiptId)
+      }));
+    } catch (error) {
+      const message = formatError(error);
+      toast({
+        title: "Error",
+        description: `Failed to delete receipt: ${message}`,
+        variant: "destructive",
+      });
+    }
+  };
 
   const deleteTransaction = async (id: string) => {
     try {
