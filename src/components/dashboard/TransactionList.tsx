@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Search, Filter, Pencil } from "lucide-react";
+import { Trash2, Search, Filter, Pencil, FileIcon, Image, ExternalLink } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { TransactionForm } from "./TransactionForm";
+import { formatError } from "@/lib/errorUtils";
 
 type Transaction = Tables<"transactions">;
 
