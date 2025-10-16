@@ -292,6 +292,73 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
                   {transaction.notes && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{transaction.notes}</p>
                   )}
+
+                  {/* Receipt indicator and preview */}
+                  {receiptsMap[transaction.id] && receiptsMap[transaction.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <button
+                        onClick={() => setExpandedReceiptTransaction(
+                          expandedReceiptTransaction === transaction.id ? null : transaction.id
+                        )}
+                        className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                      >
+                        <FileIcon className="h-3 w-3" />
+                        {receiptsMap[transaction.id].length} receipt{receiptsMap[transaction.id].length > 1 ? 's' : ''}
+                      </button>
+
+                      {/* Receipt previews */}
+                      {expandedReceiptTransaction === transaction.id && (
+                        <div className="flex flex-wrap gap-2 bg-muted/30 p-2 rounded">
+                          {receiptsMap[transaction.id].map((receipt) => (
+                            <div
+                              key={receipt.id}
+                              className="relative group bg-background border rounded overflow-hidden w-16 h-16"
+                            >
+                              {isImageType(receipt.file_type) ? (
+                                <img
+                                  src={getReceiptUrl(receipt.file_path)}
+                                  alt={receipt.file_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                              )}
+
+                              {/* Hover actions */}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                <a
+                                  href={getReceiptUrl(receipt.file_path)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 bg-white/20 hover:bg-white/40 rounded text-white"
+                                  title="Open receipt"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteReceipt(receipt.id, transaction.id);
+                                  }}
+                                  className="p-1 bg-destructive/20 hover:bg-destructive/40 rounded text-white"
+                                  title="Delete receipt"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+
+                              {/* File name tooltip */}
+                              <div className="absolute -bottom-8 left-0 bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none">
+                                {receipt.file_name}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center gap-3">
