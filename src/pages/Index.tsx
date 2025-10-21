@@ -122,6 +122,12 @@ const Index = () => {
           <TabsContent value="export">
             <ExportData transactions={transactions} />
           </TabsContent>
+          <TabsContent value="bills">
+            <BillsManager />
+          </TabsContent>
+          <TabsContent value="receipts">
+            <ReceiptsManager />
+          </TabsContent>
         </div>
         {/* Fixed Bottom Navigation - placed at the end to guarantee bottom placement */}
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/50 backdrop-blur-sm border-t pb-[env(safe-area-inset-bottom)]">
