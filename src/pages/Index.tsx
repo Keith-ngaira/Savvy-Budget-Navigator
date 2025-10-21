@@ -13,10 +13,12 @@ import { ExportData } from "@/components/analytics/ExportData";
 import { GoalsManager } from "@/components/goals/GoalsManager";
 import { GoalForecasts } from "@/components/goals/GoalForecasts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Target, Download, Home, Wallet } from "lucide-react";
+import { BarChart3, Target, Download, Home, Wallet, FileText, AlertCircle } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
 import { IncomeManager } from "@/components/income/IncomeManager";
+import { BillsManager } from "@/components/bills/BillsManager";
+import { ReceiptsManager } from "@/components/receipts/ReceiptsManager";
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
