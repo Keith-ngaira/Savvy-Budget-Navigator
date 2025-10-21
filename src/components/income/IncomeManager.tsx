@@ -39,7 +39,7 @@ export const IncomeManager = () => {
       setIncomes(data || []);
     } catch (err) {
       const message = formatError(err);
-      console.error("Error fetching incomes:", err);
+      console.error("Error fetching incomes:", message);
       toast({ title: "Error", description: `Failed to fetch income sources: ${message}`, variant: "destructive" });
     } finally {
       setIsLoading(false);

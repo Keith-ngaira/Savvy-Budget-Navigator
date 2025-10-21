@@ -112,7 +112,7 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
       }
     } catch (error) {
       const message = formatError(error);
-      console.error("Error fetching incomes:", error);
+      console.error("Error fetching incomes:", message);
       toast({ title: "Error", description: `Failed to fetch incomes: ${message}`, variant: "destructive" });
     }
   };

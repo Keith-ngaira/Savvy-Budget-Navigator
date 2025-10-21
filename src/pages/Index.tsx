@@ -13,10 +13,12 @@ import { ExportData } from "@/components/analytics/ExportData";
 import { GoalsManager } from "@/components/goals/GoalsManager";
 import { GoalForecasts } from "@/components/goals/GoalForecasts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Target, Download, Home, Wallet } from "lucide-react";
+import { BarChart3, Target, Download, Home, Wallet, FileText, AlertCircle } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
 import { IncomeManager } from "@/components/income/IncomeManager";
+import { BillsManager } from "@/components/bills/BillsManager";
+import { ReceiptsManager } from "@/components/receipts/ReceiptsManager";
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -120,11 +122,17 @@ const Index = () => {
           <TabsContent value="export">
             <ExportData transactions={transactions} />
           </TabsContent>
+          <TabsContent value="bills">
+            <BillsManager />
+          </TabsContent>
+          <TabsContent value="receipts">
+            <ReceiptsManager />
+          </TabsContent>
         </div>
         {/* Fixed Bottom Navigation - placed at the end to guarantee bottom placement */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/50 backdrop-blur-sm border-t pb-[env(safe-area-inset-bottom)]">
-          <div className="container mx-auto px-4">
-            <TabsList className="grid w-full grid-cols-6 h-12">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/50 backdrop-blur-sm border-t pb-[env(safe-area-inset-bottom)] overflow-x-auto">
+          <div className="container mx-auto px-4 min-w-full">
+            <TabsList className="grid w-full grid-cols-8 h-12 gap-0">
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Dashboard</span>
@@ -141,9 +149,17 @@ const Index = () => {
                 <Wallet className="h-4 w-4" />
                 <span className="hidden sm:inline">Income</span>
               </TabsTrigger>
+              <TabsTrigger value="bills" className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Bills</span>
+              </TabsTrigger>
               <TabsTrigger value="goals" className="flex items-center gap-2">
                 <Target className="h-4 w-4" />
                 <span className="hidden sm:inline">Goals</span>
+              </TabsTrigger>
+              <TabsTrigger value="receipts" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Receipts</span>
               </TabsTrigger>
               <TabsTrigger value="export" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
