@@ -7,11 +7,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, X, Link2, Unlink2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { 
-  linkReceiptsToTransaction, 
+import {
+  linkReceiptsToTransaction,
   getTransactionReceipts,
-  unlinkReceiptFromTransaction,
-  formatError 
+  unlinkReceiptFromTransaction
 } from "@/lib/receiptLinking";
 import { formatError as utilFormatError } from "@/lib/errorUtils";
 
