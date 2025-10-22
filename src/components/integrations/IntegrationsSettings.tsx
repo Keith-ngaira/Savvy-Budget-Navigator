@@ -50,33 +50,39 @@ export const IntegrationsSettings = ({
   }, []);
 
   const handleGoogleSheetsAuth = async () => {
-    // This would open Google OAuth flow in a real implementation
-    // For MVP, we'll show instructions
-    const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-      "client_id=" + (import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_CLIENT_ID") +
-      "&redirect_uri=" + encodeURIComponent(window.location.origin + "/auth/google-callback") +
-      "&response_type=code" +
-      "&scope=" + encodeURIComponent("https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive");
-
-    // Open in new window or show instructions
-    toast({
-      title: "Google Sheets OAuth",
-      description: "Set up OAuth in Google Cloud Console to enable this feature. Documentation: https://developers.google.com/sheets/api",
-    });
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive",
+          redirectTo: window.location.origin,
+        },
+      });
+    } catch (e) {
+      toast({
+        title: "Google Sheets OAuth Error",
+        description: "Failed to start Google sign-in. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleGoogleCalendarAuth = async () => {
-    // Similar OAuth flow for Calendar
-    const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-      "client_id=" + (import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_CLIENT_ID") +
-      "&redirect_uri=" + encodeURIComponent(window.location.origin + "/auth/google-callback") +
-      "&response_type=code" +
-      "&scope=" + encodeURIComponent("https://www.googleapis.com/auth/calendar");
-
-    toast({
-      title: "Google Calendar OAuth",
-      description: "Set up OAuth in Google Cloud Console to enable this feature. Documentation: https://developers.google.com/calendar/api",
-    });
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/calendar",
+          redirectTo: window.location.origin,
+        },
+      });
+    } catch (e) {
+      toast({
+        title: "Google Calendar OAuth Error",
+        description: "Failed to start Google sign-in. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, Plus, Unlink, Sliders } from "lucide-react";
 import { googleCalendarService } from "@/services/googleCalendar";
+import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatError } from "@/lib/errorUtils";
 import {
@@ -36,13 +37,30 @@ export const GoogleCalendarReminders = ({
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const token = localStorage.getItem("google_calendar_token");
+    if (token) {
+      setAccessToken(token);
+      setIsConnected(true);
+    }
+  }, []);
+
   const handleConnectGoogleCalendar = async () => {
-    // In a real implementation, this would open Google OAuth flow
-    toast({
-      title: "Google Calendar Connection",
-      description:
-        "To connect Google Calendar, you need to authenticate via Google OAuth. This will be set up in the settings page.",
-    });
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/calendar",
+          redirectTo: window.location.origin,
+        },
+      });
+    } catch (e) {
+      toast({
+        title: "Google Calendar OAuth Error",
+        description: "Failed to start Google sign-in. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSyncToCalendar = async () => {
@@ -117,6 +135,7 @@ export const GoogleCalendarReminders = ({
     setIsConnected(false);
     setAccessToken("");
     setLastSyncTime(null);
+    localStorage.removeItem("google_calendar_token");
     toast({
       title: "Disconnected",
       description: "Google Calendar connection removed",
