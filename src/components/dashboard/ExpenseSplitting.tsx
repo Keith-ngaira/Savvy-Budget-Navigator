@@ -92,19 +92,6 @@ export const ExpenseSplitting = ({ onSplitCreated }: { onSplitCreated?: () => vo
 
       setSplits([...splits, splitRecord]);
 
-      // Save to database
-      const { error } = await (supabase as any)
-        .from("split_expenses")
-        .insert({
-          user_id: user.id,
-          description: formData.description,
-          total_amount: amount,
-          members: formData.members.filter(m => m.name),
-          settled: false,
-        });
-
-      if (error) throw error;
-
       toast({
         title: "Success",
         description: `Split expense created for ${formData.members.filter(m => m.name).length} people`,
