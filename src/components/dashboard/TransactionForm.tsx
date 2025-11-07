@@ -329,15 +329,17 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
   const categories = formData.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md shadow-card">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{mode === "edit" ? "Edit Transaction" : "Add Transaction"}</CardTitle>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <Card className="w-full max-w-md max-h-[90vh] flex flex-col shadow-lg">
+        <CardHeader className="flex-shrink-0 flex items-center justify-between flex-row pb-3 border-b">
+          <CardTitle className="text-lg">
+            {mode === "edit" ? "Edit Transaction" : "Add Transaction"}
+          </CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -572,7 +574,7 @@ export const TransactionForm = ({ onClose, onTransactionAdded, onTransactionUpda
               </Button>
               <Button 
                 type="submit" 
-                variant={formData.type === "income" ? "income" : "expense"}
+                variant={formData.type as "income" | "expense"}
                 disabled={isLoading}
                 className="flex-1"
               >

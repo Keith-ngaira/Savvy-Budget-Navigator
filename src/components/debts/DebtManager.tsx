@@ -35,8 +35,32 @@ function uuid() { return Math.random().toString(36).slice(2) + Date.now().toStri
 function periodicPayment(principal: number, apr: number, n: number, frequency: Debt['frequency']) {
   const periodsPerYear = frequency === 'Weekly' ? 52 : 12;
   const r = apr / 100 / periodsPerYear;
-  if (r === 0) return n > 0 ? principal / n : 0;
-  return principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  
+  console.log('=== periodicPayment ===');
+  console.log('Principal:', principal);
+  console.log('APR:', apr);
+  console.log('Number of periods (n):', n);
+  console.log('Frequency:', frequency);
+  console.log('Periods per year:', periodsPerYear);
+  console.log('Monthly rate (r):', r);
+
+  if (r === 0) {
+    const result = n > 0 ? principal / n : 0;
+    console.log('Zero interest payment:', result);
+    return result;
+  }
+
+  const numerator = r * Math.pow(1 + r, n);
+  const denominator = Math.pow(1 + r, n) - 1;
+  const payment = principal * (numerator / denominator);
+  
+  console.log('Numerator (r*(1+r)^n):', numerator);
+  console.log('Denominator ((1+r)^n - 1):', denominator);
+  console.log('Calculated payment:', payment);
+  console.log('Rounded payment (2 decimals):', Number(payment.toFixed(2)));
+  console.log('======================');
+  
+  return payment;
 }
 
 function addPeriods(date: Date, freq: Debt['frequency'], k: number) {
@@ -47,15 +71,34 @@ function addPeriods(date: Date, freq: Debt['frequency'], k: number) {
 }
 
 function periodsCount(debt: Debt) {
-  return debt.frequency === 'Weekly' ? debt.termMonths * (52 / 12) : debt.termMonths;
+  // For weekly payments, convert months to weeks (approximate)
+  if (debt.frequency === 'Weekly') {
+    return Math.round(debt.termMonths * (52 / 12));
+  }
+  // For monthly payments, use the term as-is (in months)
+  return debt.termMonths;
 }
 
 function buildSchedule(debt: Debt): ScheduleRow[] {
+  console.log('\n=== buildSchedule ===');
+  console.log('Debt object:', JSON.parse(JSON.stringify(debt)));
+  
   const rows: ScheduleRow[] = [];
   let balance = debt.principal;
   const n = Math.round(periodsCount(debt));
+  
+  console.log('Calculating payment for:');
+  console.log('- Principal:', debt.principal);
+  console.log('- APR:', debt.apr);
+  console.log('- Term (months from periodsCount):', n);
+  console.log('- Frequency:', debt.frequency);
+  
   const payAm = Number(periodicPayment(debt.principal, debt.apr, n, debt.frequency).toFixed(2));
+  console.log('Final calculated payment amount:', payAm);
+  
   const start = new Date(debt.startDate);
+  console.log('Start date:', start);
+  console.log('=====================\n');
   for (let p = 1; p <= n; p++) {
     const periodsPerYear = debt.frequency === 'Weekly' ? 52 : 12;
     const r = debt.apr / 100 / periodsPerYear;
@@ -139,8 +182,19 @@ export const DebtManager = () => {
     if (!form.name.trim()) return;
     const principal = Number(form.principal);
     const apr = Number(form.apr);
-    const termMonths = Number(form.termMonths);
-    if ([principal, apr, termMonths].some(x => isNaN(x) || x <= 0)) return;
+    let termMonths = Number(form.termMonths);
+    
+    // Ensure term is at least 1 month
+    if (termMonths < 1) {
+      alert('Term must be at least 1 month');
+      return;
+    }
+    
+    if ([principal, apr, termMonths].some(x => isNaN(x) || x <= 0)) {
+      alert('Please enter valid numbers for all fields');
+      return;
+    }
+    
     const startDate = form.startDate;
     setDebts(prev => [...prev, { id: uuid(), name: form.name.trim(), principal, apr, termMonths, startDate, frequency: form.frequency, paymentType: form.paymentType }]);
     setForm({ name: "", principal: "", apr: "", termMonths: "", startDate: new Date().toISOString().split('T')[0], frequency: 'Monthly', paymentType: 'Amortizing' });

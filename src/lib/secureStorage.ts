@@ -14,7 +14,7 @@ function isCryptoAvailable(): boolean {
          window.crypto.subtle !== undefined;
 }
 
-async function deriveKey(passphrase: string, salt: Uint8Array) {
+async function deriveKey(passphrase: string, salt: ArrayBuffer) {
   if (!isCryptoAvailable()) {
     throw new Error('Web Crypto API not available. Use HTTPS or localhost.');
   }
@@ -51,11 +51,11 @@ export async function ensurePassphrase(): Promise<void> {
 
   let passphrase = sessionStorage.getItem('sbn-passphrase');
   if (!passphrase) {
-    passphrase = window.prompt('Set/Enter encryption passphrase (do NOT forget it):', '') || '';
-    if (!passphrase) throw new Error('Encryption passphrase is required');
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    passphrase = toB64(bytes);
     sessionStorage.setItem('sbn-passphrase', passphrase);
   }
-  sessionKey = await deriveKey(passphrase, sessionSalt);
+  sessionKey = await deriveKey(passphrase, sessionSalt!.buffer as ArrayBuffer);
 }
 
 export async function encryptJSON(obj: any): Promise<string> {
