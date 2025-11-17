@@ -9,16 +9,21 @@ import type { Tables } from "@/integrations/supabase/types";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { formatError } from "@/lib/errorUtils";
 
-export type Receipt = Tables<"receipts">;
-
-interface ReceiptWithTransactions extends Receipt {
-  transaction_receipts?: Array<{
+export type Receipt = Tables<"receipts"> & {
+  transaction_receipts: Array<{
     transaction_id: string;
   }>;
-}
+};
+
+// This is the type that comes back from the Supabase query
+type ReceiptWithRelations = Receipt & {
+  transaction_receipts: Array<{
+    transaction_id: string;
+  }>;
+};
 
 export const ReceiptsManager = () => {
-  const [receipts, setReceipts] = useState<ReceiptWithTransactions[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const { toast } = useToast();
@@ -47,7 +52,10 @@ export const ReceiptsManager = () => {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      setReceipts(data || []);
+      
+      // Cast the data to our expected type
+      const typedData = (data || []) as unknown as Receipt[];
+      setReceipts(typedData);
     } catch (err) {
       const message = formatError(err);
       console.error("Error fetching receipts:", message);
