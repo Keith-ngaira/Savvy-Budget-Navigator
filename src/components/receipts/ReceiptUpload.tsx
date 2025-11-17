@@ -18,6 +18,10 @@ const ALLOWED_TYPES = [
   "image/png",
   "image/webp",
   "image/gif",
+  "image/jpg",
+  "image/bmp",
+  "image/tiff",
+  "image/svg+xml",
 ];
 
 export const ReceiptUpload = ({ onClose, onUploaded }: ReceiptUploadProps) => {
@@ -102,7 +106,7 @@ export const ReceiptUpload = ({ onClose, onUploaded }: ReceiptUploadProps) => {
       // Upload file to storage
       const fileName = `${user.id}/${Date.now()}-${selectedFile.name}`;
       const { error: uploadError } = await supabase.storage
-        .from("receipts")
+        .from("transaction-receipts")
         .upload(fileName, selectedFile);
 
       if (uploadError) throw uploadError;
@@ -218,7 +222,7 @@ export const ReceiptUpload = ({ onClose, onUploaded }: ReceiptUploadProps) => {
             <div className="flex gap-2">
               <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-blue-900 dark:text-blue-200">
-                Supported formats: PDF, JPEG, PNG, WebP, GIF
+                Supported formats: PDF, JPEG, PNG, WebP, GIF, JPG, BMP, TIFF, SVG
               </p>
             </div>
           </div>

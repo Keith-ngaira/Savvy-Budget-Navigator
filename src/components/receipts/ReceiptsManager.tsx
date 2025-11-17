@@ -99,7 +99,7 @@ export const ReceiptsManager = () => {
     try {
       const { data, error } = await supabase
         .storage
-        .from("receipts")
+        .from("transaction-receipts")
         .download(receipt.file_path);
 
       if (error) throw error;
