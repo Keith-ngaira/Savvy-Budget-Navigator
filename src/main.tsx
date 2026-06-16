@@ -1,10 +1,76 @@
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { initOfflineSync, flushQueue } from './lib/offlineQueue'
+import { createRoot } from 'react-dom/client';
+import { StrictMode } from 'react';
+import App from './App.tsx';
+import './index.css';
+import { initOfflineSync, flushQueue } from './lib/offlineQueue';
+import { initCapacitor, checkPlatform } from './utils/capacitor';
 
-// Register service worker for PWA and offline support
-if ('serviceWorker' in navigator) {
+// Initialize the app
+const initApp = async () => {
+  try {
+    // Initialize Capacitor
+    await initCapacitor();
+    const isNative = await checkPlatform();
+    
+    // Register service worker for PWA and offline support (only in production and web)
+    if ('serviceWorker' in navigator && (!isNative || import.meta.env.PROD)) {
+      const swUrl = '/sw.js';
+      
+      if (import.meta.env.PROD) {
+        navigator.serviceWorker.register(swUrl)
+          .then(registration => {
+            console.log('ServiceWorker registration successful');
+            
+            // Register for periodic background sync
+            if ('sync' in registration) {
+              // Request permission for background sync
+              navigator.serviceWorker.ready.then(swRegistration => {
+                // Register sync event
+                swRegistration.sync.register('sync-queue');
+                
+                // Send message to service worker to register sync
+                if (navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.controller.postMessage({
+                    type: 'REGISTER_FLUSH_SYNC'
+                  });
+                }
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Error during service worker registration:', error);
+          });
+      } else if (import.meta.env.DEV) {
+        // In development, unregister any existing service workers
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (const registration of registrations) {
+            registration.unregister().then(() => {
+              console.log('Unregistered old service worker');
+            });
+          }
+        });
+      }
+      
+      // Initialize offline sync
+      initOfflineSync();
+      
+      // Listen for messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'FLUSH_QUEUE') {
+          console.log('Service worker requested queue flush');
+          flushQueue().catch(console.error);
+        }
+      });
+      
+      // Listen for online/offline events
+      window.addEventListener('online', () => {
+        console.log('App is online, flushing queue');
+        flushQueue().catch(console.error);
+      });
+    }
+  } catch (error) {
+    console.error('Error initializing app:', error);
+  }
   window.addEventListener('load', () => {
     const swUrl = '/sw.js';
     
@@ -111,12 +177,15 @@ if (import.meta.env.DEV) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Start the app
+const container = document.getElementById('root') as HTMLElement;
+const root = createRoot(container);
 
-// Register Service Worker and init offline sync
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-    initOfflineSync();
-  });
-}
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+// Initialize the app
+initApp().catch(console.error);

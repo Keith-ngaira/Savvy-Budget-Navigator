@@ -1,22 +1,49 @@
 {
   "appId": "com.savvynav.budget",
-  "appName": "Savvy Budget Navigator",
+  "appName": "Savvy Budget",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
-    "cleartext": true
+    "cleartext": true,
+    "allowNavigation": ["*.supabase.co"]
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 3000,
       "launchAutoHide": true,
-      "backgroundColor": "#ffffffff",
+      "backgroundColor": "#ffffff",
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false,
       "splashFullScreen": true,
       "splashImmersive": true
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "dark",
+      "resizeOnFullScreen": true
+    },
+    "StatusBar": {
+      "backgroundColor": "#ffffff",
+      "style": "dark"
+    },
+    "Camera": {
+      "cameraPermissionDescription": "Savvy Budget needs access to your camera to scan receipts and documents."
+    }
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": true,
+    "scrollEnabled": true,
+    "hideLogs": false,
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "android": {
+    "allowMixedContent": true,
+    "buildOptions": {
+      "keystorePath": "path/to/your/keystore.jks",
+      "keystoreAlias": "key0"
     }
   }
 }
