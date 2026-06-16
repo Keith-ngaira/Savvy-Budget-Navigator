@@ -16,15 +16,15 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     mode === 'development' && {
       name: 'file-logger',
-      configureServer(server) {
-        server.middlewares.use('/__log', (req, res) => {
+      configureServer(server: any) {
+        server.middlewares.use('/__log', (req: any, res: any) => {
           if (req.method !== 'POST') {
             res.statusCode = 405;
             res.end('method not allowed');
             return;
           }
           let body = '';
-          req.on('data', (chunk) => { body += chunk; });
+          req.on('data', (chunk: any) => { body += chunk; });
           req.on('end', () => {
             try {
               const logDir = path.resolve(__dirname, 'logs');

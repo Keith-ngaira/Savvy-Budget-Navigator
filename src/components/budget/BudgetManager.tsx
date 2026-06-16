@@ -159,7 +159,7 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
             period: 'monthly',
             start_date: currStart.toISOString().split('T')[0],
             end_date: currEnd.toISOString().split('T')[0],
-          })
+          }).select()
         );
       });
 
