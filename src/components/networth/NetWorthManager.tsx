@@ -28,7 +28,7 @@ export const NetWorthManager = () => {
       const uid = user?.id || "anonymous";
       setUserId(uid);
       const raw = await secureGet(`networth:${uid}`);
-      setItems(raw || []);
+      setItems(Array.isArray(raw) ? raw : []);
     };
     load();
   }, []);

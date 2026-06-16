@@ -144,9 +144,9 @@ export const DebtManager = () => {
       const uid = user?.id || "anonymous";
       setUserId(uid);
       const raw = await secureGet(`debts:${uid}`);
-      setDebts(raw || []);
+      setDebts(Array.isArray(raw) ? raw : []);
       const rawP = await secureGet(`debt-payments:${uid}`);
-      setPayments(rawP || []);
+      setPayments(Array.isArray(rawP) ? rawP : []);
     };
     load();
   }, []);

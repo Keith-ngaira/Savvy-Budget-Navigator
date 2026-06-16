@@ -1,16 +1,9 @@
-const CACHE_NAME = 'sbn-app-cache-v2';
+const CACHE_NAME = 'sbn-app-cache-v3';
 const RUNTIME_CACHE = 'sbn-runtime-cache';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
-  '/src/main.tsx',
-  '/src/index.css',
-  '/src/App.tsx',
-  // Add other static assets and routes that should be available offline
 ];
 
 self.addEventListener('install', (event) => {
@@ -18,9 +11,16 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Caching app shell');
-        return cache.addAll(APP_SHELL);
+        // Try to cache each file individually so one failure doesn't break the whole install
+        return Promise.allSettled(
+          APP_SHELL.map(url => cache.add(url))
+        ).then(() => console.log('App shell caching completed'));
       })
       .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.warn('Error during app shell caching, continuing anyway:', error);
+        return self.skipWaiting();
+      })
   );
 });
 

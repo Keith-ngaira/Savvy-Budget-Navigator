@@ -1,8 +1,11 @@
-import { App, AppInfo } from '@capacitor/app';
+import { App } from '@capacitor/app';
+import type { AppInfo } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
-import { Device, DeviceInfo } from '@capacitor/device';
-import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
+import { Device } from '@capacitor/device';
+import type { DeviceInfo } from '@capacitor/device';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import type { Photo } from '@capacitor/camera';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Preferences } from '@capacitor/preferences';
@@ -18,13 +21,24 @@ let appInfo: AppInfo | null = null;
 export const initMobile = async (): Promise<void> => {
   try {
     // Get device info
-    deviceInfo = await Device.getInfo();
-    isNativePlatform = deviceInfo.platform !== 'web';
-    
-    // Get app info
-    appInfo = await App.getInfo();
-    
-    console.log('Mobile initialized:', { isNativePlatform, platform: deviceInfo.platform });
+    try {
+      deviceInfo = await Device.getInfo();
+      isNativePlatform = deviceInfo.platform !== 'web';
+    } catch (e) {
+      console.warn('Device.getInfo not available, assuming web platform', e);
+      isNativePlatform = false;
+    }
+
+    // Get app info (only if on native platform)
+    if (isNativePlatform) {
+      try {
+        appInfo = await App.getInfo();
+      } catch (e) {
+        console.warn('App.getInfo not available', e);
+      }
+    }
+
+    console.log('Mobile initialized:', { isNativePlatform, platform: deviceInfo?.platform || 'web' });
   } catch (error) {
     console.error('Error initializing mobile features:', error);
   }

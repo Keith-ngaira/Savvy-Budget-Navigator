@@ -31,9 +31,9 @@ export const InvestmentManager = () => {
       const uid = user?.id || "anonymous";
       setUserId(uid);
       const raw = await secureGet(`investments:${uid}`);
-      setHoldings(raw || []);
+      setHoldings(Array.isArray(raw) ? raw : []);
       const rawSnaps = await secureGet(`investment-snapshots:${uid}`);
-      setSnapshots(rawSnaps || []);
+      setSnapshots(Array.isArray(rawSnaps) ? rawSnaps : []);
     };
     load();
   }, []);
