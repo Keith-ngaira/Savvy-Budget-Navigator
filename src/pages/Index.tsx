@@ -19,6 +19,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { IncomeManager } from "@/components/income/IncomeManager";
 import { BillsManager } from "@/components/bills/BillsManager";
 import { ReceiptsManager } from "@/components/receipts/ReceiptsManager";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -93,22 +94,24 @@ const Index = () => {
             <BudgetManager transactions={transactions} />
           </TabsContent>
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FinancialCharts transactions={transactions} />
-              <NetWorthManager />
-            </div>
-            <div className="mt-6">
-              <DebtManager />
-            </div>
-            <div className="mt-6">
-              <InvestmentManager />
-            </div>
-            <div className="mt-6">
-              <EndOfMonthReport />
-            </div>
-            <div className="mt-6">
-              <EncryptedBackups />
-            </div>
+            <ErrorBoundary>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <FinancialCharts transactions={transactions} />
+                <NetWorthManager />
+              </div>
+              <div className="mt-6">
+                <DebtManager />
+              </div>
+              <div className="mt-6">
+                <InvestmentManager />
+              </div>
+              <div className="mt-6">
+                <EndOfMonthReport />
+              </div>
+              <div className="mt-6">
+                <EncryptedBackups />
+              </div>
+            </ErrorBoundary>
           </TabsContent>
           <TabsContent value="income">
             <IncomeManager />

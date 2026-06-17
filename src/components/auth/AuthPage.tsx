@@ -71,15 +71,20 @@ export const AuthPage = () => {
       if (error) {
         throw error;
       }
-      
+
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
     } catch (error: any) {
+      const message = error.message || "An error occurred during sign in";
+      const isNetworkError = message.includes("Failed to fetch") || error.name === "TypeError";
+
       toast({
         title: "Sign in failed",
-        description: error.message || "An error occurred during sign in",
+        description: isNetworkError
+          ? "Network error. This may be a preview environment limitation. Try testing locally."
+          : message,
         variant: "destructive",
       });
     } finally {
@@ -106,9 +111,14 @@ export const AuthPage = () => {
         throw error;
       }
     } catch (error: any) {
+      const message = error.message || `An error occurred during Google sign ${isSignUp ? 'up' : 'in'}`;
+      const isNetworkError = message.includes("Failed to fetch") || error.name === "TypeError";
+
       toast({
         title: `Google sign ${isSignUp ? 'up' : 'in'} failed`,
-        description: error.message || `An error occurred during Google sign ${isSignUp ? 'up' : 'in'}`,
+        description: isNetworkError
+          ? "Network error. This may be a preview environment limitation. Try testing locally."
+          : message,
         variant: "destructive",
       });
       setIsLoading(false);
