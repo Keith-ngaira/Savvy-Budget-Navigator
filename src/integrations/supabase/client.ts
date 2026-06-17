@@ -14,11 +14,27 @@ if (!SUPABASE_ANON_KEY) {
 
 const NORMALIZED_URL = SUPABASE_URL.replace(/\/+$/, '');
 
+// Custom fetch to work around browser extension interference
+const customFetch = async (url: string, options?: RequestInit) => {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (error) {
+    // Retry once if fetch fails (handles extension interference)
+    console.error('Initial fetch failed, retrying...', error);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return fetch(url, options);
+  }
+};
+
 export const supabase = createClient<Database>(NORMALIZED_URL, SUPABASE_ANON_KEY, {
   auth: {
     // localStorage is only available in the browser
     storage: typeof window !== 'undefined' ? localStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    fetch: customFetch,
   },
 });
