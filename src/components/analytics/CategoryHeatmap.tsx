@@ -40,8 +40,9 @@ export const CategoryHeatmap = ({ transactions }: CategoryHeatmapProps) => {
 
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
+    const txArray = Array.isArray(transactions) ? transactions : [];
 
-    transactions
+    txArray
       .filter(t => {
         const txnDate = new Date(t.date);
         return (

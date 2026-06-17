@@ -30,8 +30,8 @@ export const EndOfMonthReport = () => {
         supabase.from("transactions").select("*").eq("user_id", user.id),
         supabase.from("income_sources").select("*").eq("user_id", user.id),
       ]);
-      setTransactions(txRes.data || []);
-      setIncomes(incRes.data || []);
+      setTransactions(Array.isArray(txRes.data) ? txRes.data : []);
+      setIncomes(Array.isArray(incRes.data) ? incRes.data : []);
     };
     load();
   }, []);

@@ -27,13 +27,14 @@ export const ExportData = ({ transactions }: ExportDataProps) => {
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("income_sources").select("*");
-      setIncomes(data || []);
+      setIncomes(Array.isArray(data) ? data : []);
     };
     load();
   }, []);
 
+  const txArray = Array.isArray(transactions) ? transactions : [];
   const merged = [
-    ...transactions,
+    ...txArray,
     ...incomes.map((i) => ({
       date: i.date,
       type: "income",
