@@ -38,30 +38,33 @@ export const MonthOverMonth = ({ transactions, incomes }: MonthOverMonthProps) =
   const prevFrom = startOfMonth(prevMonth);
   const prevTo = endOfMonth(prevMonth);
 
+  const txArray = Array.isArray(transactions) ? transactions : [];
+  const incomesArray = Array.isArray(incomes) ? incomes : [];
+
   const txIncomeCurr = sum(
-    transactions
+    txArray
       .filter(t => t.type === "income" && inRange(t.date, currFrom, currTo))
       .map(t => Number(t.amount))
   );
   const txIncomePrev = sum(
-    transactions
+    txArray
       .filter(t => t.type === "income" && inRange(t.date, prevFrom, prevTo))
       .map(t => Number(t.amount))
   );
 
-  const incomeSrcCurr = sum(incomes.filter(i => inRange(i.date, currFrom, currTo)).map(i => Number(i.amount)));
-  const incomeSrcPrev = sum(incomes.filter(i => inRange(i.date, prevFrom, prevTo)).map(i => Number(i.amount)));
+  const incomeSrcCurr = sum(incomesArray.filter(i => inRange(i.date, currFrom, currTo)).map(i => Number(i.amount)));
+  const incomeSrcPrev = sum(incomesArray.filter(i => inRange(i.date, prevFrom, prevTo)).map(i => Number(i.amount)));
 
   const incomeCurr = txIncomeCurr + incomeSrcCurr;
   const incomePrev = txIncomePrev + incomeSrcPrev;
 
   const expenseCurr = sum(
-    transactions
+    txArray
       .filter(t => t.type === "expense" && inRange(t.date, currFrom, currTo))
       .map(t => Number(t.amount))
   );
   const expensePrev = sum(
-    transactions
+    txArray
       .filter(t => t.type === "expense" && inRange(t.date, prevFrom, prevTo))
       .map(t => Number(t.amount))
   );

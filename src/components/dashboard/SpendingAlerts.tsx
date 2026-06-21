@@ -38,8 +38,9 @@ export const SpendingAlerts = ({ transactions, budgets }: SpendingAlertsProps) =
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    budgets.forEach((budget) => {
-      const spent = transactions
+    const budgetsArray = Array.isArray(budgets) ? budgets : [];
+    budgetsArray.forEach((budget) => {
+      const spent = txArray
         .filter(t => {
           const txnDate = new Date(t.date);
           return (

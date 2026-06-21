@@ -106,7 +106,7 @@ export const FinancialCharts = ({ transactions }: FinancialChartsProps) => {
     }));
 
   // Weekly spending data
-  const weeklyData = transactions
+  const weeklyData = txArray
     .filter(t => t.type === "expense")
     .reduce((acc, transaction) => {
       const date = new Date(transaction.date);
