@@ -106,7 +106,8 @@ export const SpendingAlerts = ({ transactions, budgets }: SpendingAlertsProps) =
     const last30From = new Date(now);
     last30From.setDate(now.getDate() - 30);
 
-    const expenses = transactions.filter(t => t.type === "expense");
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const expenses = txArray.filter(t => t.type === "expense");
 
     // Build daily sums per category for last 30 days
     const byCatDay = new Map<string, Map<string, number>>();

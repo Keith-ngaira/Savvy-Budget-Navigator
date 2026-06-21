@@ -29,6 +29,7 @@ export const WeeklySpendingTrends = ({ transactions, view = "weekly" }: WeeklySp
   const generateTrendData = () => {
     const now = new Date();
     const data: TrendData[] = [];
+    const txArray = Array.isArray(transactions) ? transactions : [];
 
     if (selectedView === "weekly") {
       for (let i = 6; i >= 0; i--) {
@@ -39,7 +40,7 @@ export const WeeklySpendingTrends = ({ transactions, view = "weekly" }: WeeklySp
         const dayEnd = new Date(date);
         dayEnd.setHours(23, 59, 59, 999);
 
-        const dayTransactions = transactions.filter(t => {
+        const dayTransactions = txArray.filter(t => {
           const txnDate = new Date(t.date);
           return txnDate >= dayStart && txnDate <= dayEnd;
         });
@@ -63,7 +64,7 @@ export const WeeklySpendingTrends = ({ transactions, view = "weekly" }: WeeklySp
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
 
-        const monthTransactions = transactions.filter(t => {
+        const monthTransactions = txArray.filter(t => {
           const txnDate = new Date(t.date);
           return txnDate >= date && txnDate < nextMonth;
         });

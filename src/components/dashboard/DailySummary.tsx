@@ -17,7 +17,8 @@ export const DailySummary = ({ transactions }: DailySummaryProps) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const todayTransactions = transactions.filter(t => {
+  const txArray = Array.isArray(transactions) ? transactions : [];
+  const todayTransactions = txArray.filter(t => {
     const txDate = new Date(t.date);
     txDate.setHours(0, 0, 0, 0);
     return txDate.getTime() === today.getTime();

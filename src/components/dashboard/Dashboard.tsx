@@ -156,12 +156,13 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
   // Prepare data for pie chart (recent expenses by category)
   const getExpenseData = () => {
     const categoryMap = new Map();
-    
+
     // Get recent expenses (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    transactions
+
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    txArray
       .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
       .forEach(transaction => {
         const amount = Number(transaction.amount);
