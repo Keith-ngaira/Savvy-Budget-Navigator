@@ -201,7 +201,7 @@ export const ReceiptsManager = () => {
                   <p className="text-xs text-muted-foreground">Total Size</p>
                   <p className="text-lg font-semibold">
                     {formatFileSize(
-                      receipts.reduce((sum, r) => sum + Number(r.file_size), 0)
+                      (Array.isArray(receipts) ? receipts : []).reduce((sum, r) => sum + Number(r.file_size), 0)
                     )}
                   </p>
                 </div>

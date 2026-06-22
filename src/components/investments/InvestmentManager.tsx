@@ -47,16 +47,18 @@ export const InvestmentManager = () => {
   }, [holdings, snapshots, userId]);
 
   const summary = useMemo(() => {
-    const invested = holdings.reduce((a, h) => a + h.units * h.buyPrice, 0);
-    const value = holdings.reduce((a, h) => a + h.units * h.currentPrice, 0);
+    const holdingsArray = Array.isArray(holdings) ? holdings : [];
+    const invested = holdingsArray.reduce((a, h) => a + h.units * h.buyPrice, 0);
+    const value = holdingsArray.reduce((a, h) => a + h.units * h.currentPrice, 0);
     const pnl = value - invested;
     const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
     return { invested, value, pnl, pnlPct };
   }, [holdings]);
 
   const allocationData = useMemo(() => {
+    const holdingsArray = Array.isArray(holdings) ? holdings : [];
     const byType: Record<string, number> = {};
-    holdings.forEach(h => { byType[h.type] = (byType[h.type] || 0) + h.units * h.currentPrice; });
+    holdingsArray.forEach(h => { byType[h.type] = (byType[h.type] || 0) + h.units * h.currentPrice; });
     return Object.entries(byType).map(([name, value]) => ({ name, value }));
   }, [holdings]);
 

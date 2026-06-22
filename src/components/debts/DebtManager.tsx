@@ -160,9 +160,11 @@ export const DebtManager = () => {
   }, [debts, payments, userId]);
 
   const summaries = useMemo(() => {
-    return debts.map(d => {
+    const debtsArray = Array.isArray(debts) ? debts : [];
+    const paymentsArray = Array.isArray(payments) ? payments : [];
+    return debtsArray.map(d => {
       const schedule = buildSchedule(d);
-      const paid = payments.filter(p => p.debtId === d.id).reduce((a,b)=>a+b.amount,0);
+      const paid = paymentsArray.filter(p => p.debtId === d.id).reduce((a,b)=>a+b.amount,0);
       const totalInterest = schedule.reduce((a, r) => a + r.interest, 0);
       const remainingBalance = schedule.at(-1)?.balance ?? Math.max(0, d.principal - (schedule.reduce((a,r)=>a+r.principal,0)));
       const next = schedule.find(r => new Date(r.date) >= new Date());
