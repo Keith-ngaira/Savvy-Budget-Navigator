@@ -135,14 +135,16 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
   };
 
   const calculateTotals = () => {
-    const txnIncome = transactions
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const txnIncome = txArray
       .filter(t => t.type === "income")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const incomeSourcesTotal = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+    const incomesArray = Array.isArray(incomes) ? incomes : [];
+    const incomeSourcesTotal = incomesArray.reduce((sum, i) => sum + Number(i.amount), 0);
     const income = txnIncome + incomeSourcesTotal;
 
-    const expenses = transactions
+    const expenses = txArray
       .filter(t => t.type === "expense")
       .reduce((sum, t) => sum + Number(t.amount), 0);
     
@@ -156,12 +158,13 @@ export const Dashboard = ({ transactions, onTransactionsChange }: DashboardProps
   // Prepare data for pie chart (recent expenses by category)
   const getExpenseData = () => {
     const categoryMap = new Map();
-    
+
     // Get recent expenses (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    transactions
+
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    txArray
       .filter(t => t.type === 'expense' && new Date(t.date) >= thirtyDaysAgo)
       .forEach(transaction => {
         const amount = Number(transaction.amount);

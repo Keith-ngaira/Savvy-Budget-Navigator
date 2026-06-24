@@ -38,8 +38,9 @@ export const SpendingAlerts = ({ transactions, budgets }: SpendingAlertsProps) =
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    budgets.forEach((budget) => {
-      const spent = transactions
+    const budgetsArray = Array.isArray(budgets) ? budgets : [];
+    budgetsArray.forEach((budget) => {
+      const spent = txArray
         .filter(t => {
           const txnDate = new Date(t.date);
           return (
@@ -106,7 +107,8 @@ export const SpendingAlerts = ({ transactions, budgets }: SpendingAlertsProps) =
     const last30From = new Date(now);
     last30From.setDate(now.getDate() - 30);
 
-    const expenses = transactions.filter(t => t.type === "expense");
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const expenses = txArray.filter(t => t.type === "expense");
 
     // Build daily sums per category for last 30 days
     const byCatDay = new Map<string, Map<string, number>>();

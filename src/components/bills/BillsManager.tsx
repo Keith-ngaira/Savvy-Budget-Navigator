@@ -121,8 +121,9 @@ export const BillsManager = () => {
     return <Clock className="h-5 w-5 text-warning" />;
   };
 
-  const upcomingBills = bills.filter(b => !b.is_paid);
-  const paidBills = bills.filter(b => b.is_paid);
+  const billsArray = Array.isArray(bills) ? bills : [];
+  const upcomingBills = billsArray.filter(b => !b.is_paid);
+  const paidBills = billsArray.filter(b => b.is_paid);
   const totalUnpaid = upcomingBills.reduce((sum, b) => sum + Number(b.amount), 0);
 
   return (

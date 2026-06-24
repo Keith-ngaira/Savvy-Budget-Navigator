@@ -34,9 +34,14 @@ export const EncryptedBackups = () => {
       setLoading(true);
       const { data, error } = await supabase.storage.from(BUCKET).list(`backups/${uid}`, { limit: 50, offset: 0, sortBy: { column: 'created_at', order: 'desc' } as any });
       if (error) throw error;
-      setEntries((data || []).map((d) => ({ name: d.name, id: d.id as any, updated_at: (d as any).updated_at, created_at: (d as any).created_at, size: d.metadata?.size })));
+      if (Array.isArray(data)) {
+        setEntries(data.map((d) => ({ name: d.name, id: d.id as any, updated_at: (d as any).updated_at, created_at: (d as any).created_at, size: d.metadata?.size })));
+      } else {
+        setEntries([]);
+      }
     } catch (e: any) {
       toast({ title: "Failed to list backups", description: e.message || String(e), variant: "destructive" });
+      setEntries([]);
     } finally {
       setLoading(false);
     }

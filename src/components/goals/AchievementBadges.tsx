@@ -32,7 +32,8 @@ export const AchievementBadges = ({ transactions, goals }: AchievementBadgesProp
   const generateAchievements = () => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const monthTransactions = transactions.filter(t => {
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const monthTransactions = txArray.filter(t => {
       const txnDate = new Date(t.date);
       return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear;
     });

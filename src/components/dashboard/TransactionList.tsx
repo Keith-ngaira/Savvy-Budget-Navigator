@@ -41,7 +41,8 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
   // Fetch receipts for all transactions
   useEffect(() => {
     const fetchReceiptsForTransactions = async () => {
-      const transactionIds = transactions.map(t => t.id);
+      const txArray = Array.isArray(transactions) ? transactions : [];
+      const transactionIds = txArray.map(t => t.id);
       if (transactionIds.length === 0) return;
 
       try {
@@ -178,7 +179,9 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
     }
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
+  const txArray = Array.isArray(transactions) ? transactions : [];
+
+  const filteredTransactions = txArray.filter((transaction) => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || transaction.type === typeFilter;
@@ -187,7 +190,7 @@ export const TransactionList = ({ transactions, onRefresh, isLoading }: Transact
     return matchesSearch && matchesType && matchesCategory;
   });
 
-  const categories = [...new Set(transactions.map(t => t.category))];
+  const categories = [...new Set(txArray.map(t => t.category))];
 
   if (isLoading) {
     return (

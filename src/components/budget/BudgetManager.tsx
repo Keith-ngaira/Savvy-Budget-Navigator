@@ -87,8 +87,9 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
   const calculateBudgetProgress = (budget: Budget) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    
-    const spent = transactions
+
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const spent = txArray
       .filter(t => {
         const transactionDate = new Date(t.date);
         return (
@@ -125,7 +126,8 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
       const { start: prevStart, end: prevEnd } = getPrevMonthRange(now);
 
       // Build maps for quick lookups
-      const monthlyBudgets = budgets.filter(b => (b.period || 'monthly') === 'monthly');
+      const budgetsArray = Array.isArray(budgets) ? budgets : [];
+      const monthlyBudgets = budgetsArray.filter(b => (b.period || 'monthly') === 'monthly');
 
       const hasCurrentForCategory = (category: string) =>
         monthlyBudgets.some(b => b.category === category && b.start_date === currStart.toISOString().split('T')[0]);
@@ -137,7 +139,7 @@ export const BudgetManager = ({ transactions }: BudgetManagerProps) => {
         if (hasCurrentForCategory(prevBudget.category)) return;
 
         // Compute previous month spent for this category
-        const spentPrev = transactions
+        const spentPrev = txArray
           .filter(t => {
             const d = new Date(t.date);
             return (

@@ -212,7 +212,8 @@ export const GoogleSheetSync = ({
 
 
 
-      const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
+      const budgetsArray = Array.isArray(budgets) ? budgets : [];
+      const totalBudget = budgetsArray.reduce((sum, b) => sum + b.amount, 0);
 
 
 
@@ -587,4 +588,3 @@ export const GoogleSheetSync = ({
 
 
 export default GoogleSheetSync;
-

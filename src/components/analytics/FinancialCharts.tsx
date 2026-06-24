@@ -44,8 +44,10 @@ const COLORS = [
 ];
 
 export const FinancialCharts = ({ transactions }: FinancialChartsProps) => {
+  const txArray = Array.isArray(transactions) ? transactions : [];
+
   // Expense by category data
-  const expensesByCategory = transactions
+  const expensesByCategory = txArray
     .filter(t => t.type === "expense")
     .reduce((acc, transaction) => {
       const category = transaction.category;
@@ -59,7 +61,7 @@ export const FinancialCharts = ({ transactions }: FinancialChartsProps) => {
   }));
 
   // Monthly trends data
-  const monthlyData = transactions.reduce((acc, transaction) => {
+  const monthlyData = txArray.reduce((acc, transaction) => {
     const date = new Date(transaction.date);
     const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
     
@@ -80,7 +82,7 @@ export const FinancialCharts = ({ transactions }: FinancialChartsProps) => {
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("income_sources").select("*");
-      setIncomes(data || []);
+      setIncomes(Array.isArray(data) ? data : []);
     };
     load();
   }, []);
@@ -104,7 +106,7 @@ export const FinancialCharts = ({ transactions }: FinancialChartsProps) => {
     }));
 
   // Weekly spending data
-  const weeklyData = transactions
+  const weeklyData = txArray
     .filter(t => t.type === "expense")
     .reduce((acc, transaction) => {
       const date = new Date(transaction.date);

@@ -30,8 +30,8 @@ export const EndOfMonthReport = () => {
         supabase.from("transactions").select("*").eq("user_id", user.id),
         supabase.from("income_sources").select("*").eq("user_id", user.id),
       ]);
-      setTransactions(txRes.data || []);
-      setIncomes(incRes.data || []);
+      setTransactions(Array.isArray(txRes.data) ? txRes.data : []);
+      setIncomes(Array.isArray(incRes.data) ? incRes.data : []);
     };
     load();
   }, []);
@@ -41,8 +41,10 @@ export const EndOfMonthReport = () => {
     const from = startOfPrevMonth(now);
     const to = endOfPrevMonth(now);
 
-    const tx = transactions.filter(t => inRange(t.date, from, to));
-    const inc = incomes.filter(i => inRange(i.date, from, to));
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const incomesArray = Array.isArray(incomes) ? incomes : [];
+    const tx = txArray.filter(t => inRange(t.date, from, to));
+    const inc = incomesArray.filter(i => inRange(i.date, from, to));
 
     const expenseTotal = tx.filter(t => t.type === "expense").reduce((a, b) => a + Number(b.amount), 0);
     const incomeTxTotal = tx.filter(t => t.type === "income").reduce((a, b) => a + Number(b.amount), 0);

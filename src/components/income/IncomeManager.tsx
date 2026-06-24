@@ -67,7 +67,8 @@ export const IncomeManager = () => {
     }
   };
 
-  const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+  const incomesArray = Array.isArray(incomes) ? incomes : [];
+  const totalIncome = incomesArray.reduce((sum, i) => sum + Number(i.amount), 0);
 
   return (
     <div className="space-y-6">

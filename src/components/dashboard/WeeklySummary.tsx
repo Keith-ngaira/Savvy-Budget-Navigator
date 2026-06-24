@@ -39,7 +39,8 @@ export const WeeklySummary = ({ transactions }: WeeklySummaryProps) => {
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
-    const weekTransactions = transactions.filter(t => {
+    const txArray = Array.isArray(transactions) ? transactions : [];
+    const weekTransactions = txArray.filter(t => {
       const txnDate = new Date(t.date);
       return txnDate >= weekStart && txnDate <= weekEnd;
     });
